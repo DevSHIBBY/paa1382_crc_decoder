@@ -42,10 +42,14 @@ def compute_crc_from_6bytes(B):
     crc[14] = bit(B[0],4) ^ bit(B[0],0) ^ bit(B[3],2) ^ bit(B[4],2) ^ bit(B[5],6) ^ bit(B[5],4) ^ bit(B[5],1)
     crc[15] = bit(B[0],7) ^ bit(B[0],0) ^ bit(B[4],3) ^ bit(B[5],7) ^ bit(B[5],5) ^ bit(B[5],2)
 
-    val = 0
-    for i in range(16):
-        val |= (crc[i] & 1) << i
-    return val
+    low = 0
+    high = 0
+    for i in range(8):
+        low  |= (crc[i] & 1) << i
+    for i in range(8,16):
+        high |= (crc[i] & 1) << (i-8)
+
+    return (low, high, (low << 8) | high)
 
 # --- GUI ---
 root = tk.Tk()
@@ -72,11 +76,22 @@ def on_calculate(event=None):
         result_label.config(text="Format hex invalide", bg="orange"); return
     if len(parsed) < 10:
         result_label.config(text="Trame trop courte (≥10 octets)", bg="orange"); return
-    ok, crc_calc, crc_file = check_frame(parsed)
-    if ok:
-        result_label.config(text=f"CRC: {crc_calc:04X} (OK)", bg="lightgreen")
+
+    B6 = parsed[2:8]
+    low, high, _ = compute_crc_from_6bytes(B6)
+
+    # CRC calculé = deux octets dans l'ordre trame
+    calc_str = f"{low:02X} {high:02X}"
+
+    # CRC extrait de la trame
+    low_file, high_file = parsed[-2], parsed[-1]
+    file_str = f"{low_file:02X} {high_file:02X}"
+
+    if (low, high) == (low_file, high_file):
+        result_label.config(text=f"CRC calculé: {calc_str}  (OK)", bg="lightgreen")
     else:
-        result_label.config(text=f"CRC: {crc_calc:04X}  (attendu {crc_file:04X})", bg="tomato")
+        result_label.config(text=f"CRC calculé: {calc_str}  (attendu {file_str})", bg="tomato")
+
 
 def on_open_file():
     path = filedialog.askopenfilename(title="Choisir un fichier de trames",
