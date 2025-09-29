@@ -53,9 +53,9 @@ def compute_crc_from_6bytes(B):
 
 # --- GUI ---
 root = tk.Tk()
-root.title("Calcul CRC — version corrigée + fichier")
+root.title("Calcul CRC")
 
-tk.Label(root, text="Trame hex (ex: B4 33 EB 21 22 07 99 00 C8 82):").grid(row=0, column=0, sticky="w", padx=6, pady=(6,0))
+tk.Label(root, text="Saisir une trame en respectant ce format: B4 33 EB 21 22 07 99 00 C8 82").grid(row=0, column=0, sticky="w", padx=6, pady=(6,0))
 entry = tk.Entry(root, width=64)
 entry.grid(row=1, column=0, padx=6, pady=6, sticky="we")
 entry.insert(0, "B4 33 EB 21 22 07 99 00 C8 82")
@@ -94,29 +94,45 @@ def on_calculate(event=None):
 
 
 def on_open_file():
-    path = filedialog.askopenfilename(title="Choisir un fichier de trames",
-                                      filetypes=[("Text files","*.txt"),("All files","*.*")])
-    if not path: return
-    total = okcount = 0
+    path = filedialog.askopenfilename(
+        title="Ouvrir un fichier de trames",
+        filetypes=[("Texte", "*.txt"), ("Tous fichiers", "*.*")]
+    )
+    if not path:
+        return
+
+    ok_count = 0
     bad_lines = []
-    with open(path,"r",encoding="utf-8",errors="ignore") as f:
-        for lineno,line in enumerate(f, start=1):
-            parsed = parse_hex_input(line)
-            if parsed is None or len(parsed) < 10:
-                bad_lines.append(f"Ligne {lineno}: format invalide")
+
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        for lineno, line in enumerate(f, start=1):
+            parts = parse_hex_input(line.strip())
+            if not parts or len(parts) < 10:
                 continue
-            total += 1
-            ok, crc_calc, crc_file = check_frame(parsed)
-            if ok:
-                okcount += 1
+
+            B6 = parts[2:8]
+            low, high, word = compute_crc_from_6bytes(B6)
+
+            # CRC fourni par la trame (2 derniers octets)
+            low_file, high_file = parts[-2], parts[-1]
+            word_file = (low_file << 8) | high_file
+
+            if word == word_file:
+                ok_count += 1
             else:
-                bad_lines.append(f"Ligne {lineno}: CRC {crc_calc:04X} attendu {crc_file:04X}")
-    msg = f"Trames totales: {total}\nCRC corrects: {okcount}\nCRC incorrects: {total-okcount}"
+                bad_lines.append(
+                    f"Ligne {lineno}: CRC {low:02X} {high:02X} attendu {low_file:02X} {high_file:02X}"
+                )
+
+    # Résumé dans une popup
+    total = ok_count + len(bad_lines)
     if bad_lines:
-        msg += "\n\nDétails erreurs:\n" + "\n".join(bad_lines[:20])
-        if len(bad_lines) > 20:
-            msg += f"\n... et {len(bad_lines)-20} autres."
-    messagebox.showinfo("Résultat analyse fichier", msg)
+        msg = f"{ok_count}/{total} trames correctes\n\n" + "\n".join(bad_lines)
+    else:
+        msg = f"Toutes les {total} trames sont correctes ✅"
+
+    messagebox.showinfo("Résultat vérification CRC", msg)
+
 
 btn = tk.Button(root, text="Calculer", command=on_calculate)
 btn.grid(row=1, column=1, padx=6, pady=6)
