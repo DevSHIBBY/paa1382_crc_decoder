@@ -8,7 +8,7 @@ Ce programme permet de vérifier la validité du CRC d'une trame FFSK  destinati
 
 ![Picture of the ATR 425 DIAMANT logic board with logic analyzer probes attached to it](https://github.com/DevSHIBBY/paa1382_crc_decoder/blob/main/doc/probes_on_board.jpg)
 
-Dans l'exemple ci-dessus, les données sont capturées directement sur les signaux Donnée (pin 6) et Horloge (pin 3 du FX419J.
+Dans l'exemple ci-dessus, les données sont capturées directement sur les signaux Donnée (pin 6) et Horloge (pin 3) du FX419J.
 
 La trame capturée est décodée à l'aide d'un décodeur synchrone :
 
