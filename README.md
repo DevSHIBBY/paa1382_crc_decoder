@@ -20,7 +20,7 @@ Les deux octets 0xAA représentent le préambule, et non une donnée utile.
 
 Ouvrir le décodeur avec la commande suivante :
 ```
-python python check_crc.py
+python check_crc.py
 ```
 
 Entrer la trame à vérifier dans la zone de saisie (supprimer préalablement l'exemple) puis appuyer sur  le bouton **Valider** : 
